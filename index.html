@@ -1,1 +1,858 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLOHOM Monthly Performance Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0f1e;
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 24px;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #2a3150;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #d4af37;
+      margin-bottom: 8px;
+    }
+    
+    .header .subtitle {
+      font-size: 1rem;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    
+    .header .tagline {
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+    
+    .card {
+      background: #1a2035;
+      border: 1px solid #2a3150;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      transition: border-color 0.3s ease;
+    }
+    
+    .card:hover {
+      border-color: #d4af37;
+    }
+    
+    .card-gold {
+      border-color: #d4af37;
+    }
+    
+    .section-header {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #d4af37;
+      margin-bottom: 8px;
+    }
+    
+    .funnel-label {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+    
+    .overview-text {
+      color: #ffffff;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    
+    .explainer {
+      font-size: 0.875rem;
+      color: #94a3b8;
+      border-left: 3px solid #d4af37;
+      padding-left: 16px;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: #0a0f1e;
+      border: 1px solid #2a3150;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #d4af37;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-trend {
+      font-size: 0.75rem;
+      margin-top: 4px;
+    }
+    
+    .trend-up {
+      color: #14b8a6;
+    }
+    
+    .trend-down {
+      color: #ef4444;
+    }
+    
+    .charts-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+    
+    .chart-container {
+      background: #0a0f1e;
+      border-radius: 8px;
+      padding: 16px;
+      height: 320px;
+    }
+    
+    .chart-container canvas {
+      max-height: 280px;
+    }
+    
+    .highlight-tiles {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+    
+    @media (max-width: 1200px) {
+      .highlight-tiles {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .highlight-tiles {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .charts-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .highlight-tile {
+      background: #0a0f1e;
+      border: 1px solid #2a3150;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .highlight-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #d4af37;
+    }
+    
+    .highlight-label {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .summary-bullets {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .summary-bullets li {
+      padding: 8px 0;
+      border-bottom: 1px solid #2a3150;
+      color: #ffffff;
+      line-height: 1.5;
+    }
+    
+    .summary-bullets li:last-child {
+      border-bottom: none;
+    }
+    
+    .summary-bullets li::before {
+      content: "→";
+      color: #d4af37;
+      margin-right: 12px;
+    }
+    
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-bar label {
+      color: #94a3b8;
+      font-size: 0.875rem;
+    }
+    
+    .filter-bar input[type="month"] {
+      background: #0a0f1e;
+      border: 1px solid #2a3150;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .filter-btn {
+      background: #d4af37;
+      color: #0a0f1e;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: opacity 0.3s ease;
+    }
+    
+    .filter-btn:hover {
+      opacity: 0.9;
+    }
+    
+    .pdf-button {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #d4af37;
+      color: #0a0f1e;
+      border: none;
+      border-radius: 8px;
+      padding: 14px 24px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+      z-index: 1000;
+      transition: transform 0.3s ease;
+    }
+    
+    .pdf-button:hover {
+      transform: translateY(-2px);
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 32px 0;
+      color: #94a3b8;
+      font-size: 0.875rem;
+      border-top: 1px solid #2a3150;
+      margin-top: 32px;
+    }
+    
+    @media print {
+      @page {
+        margin: 0;
+        size: A4;
+      }
+      
+      body {
+        margin: 0;
+        padding: 15mm;
+        background: #0a0f1e !important;
+      }
+      
+      .pdf-button,
+      .filter-bar-card {
+        display: none !important;
+      }
+      
+      .card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      
+      .chart-container {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>FLOHOM</h1>
+      <p class="subtitle">January 2026 — February 2026</p>
+      <p class="tagline">FLOHOM Monthly Performance Dashboard</p>
+    </header>
+    
+    <!-- Executive Summary -->
+    <section class="card card-gold">
+      <h2 class="section-header">Executive Summary</h2>
+      <p class="funnel-label">✨ What's Performing Well</p>
+      
+      <div class="highlight-tiles">
+        <div class="highlight-tile">
+          <div class="highlight-value">$273.6K</div>
+          <div class="highlight-label">Total Revenue</div>
+        </div>
+        <div class="highlight-tile">
+          <div class="highlight-value">+84.7%</div>
+          <div class="highlight-label">Revenue vs LY (Feb)</div>
+        </div>
+        <div class="highlight-tile">
+          <div class="highlight-value">70%</div>
+          <div class="highlight-label">Direct Split (Feb)</div>
+        </div>
+        <div class="highlight-tile">
+          <div class="highlight-value">45,110</div>
+          <div class="highlight-label">Total Leads</div>
+        </div>
+        <div class="highlight-tile">
+          <div class="highlight-value">$0.70</div>
+          <div class="highlight-label">Cost Per Lead (Feb)</div>
+        </div>
+        <div class="highlight-tile">
+          <div class="highlight-value">46.8K</div>
+          <div class="highlight-label">Website Visits</div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="card">
+      <ul class="summary-bullets">
+        <li>Total revenue reached $273,588 across January and February 2026, with February showing an 84.7% increase compared to the same month last year.</li>
+        <li>Direct booking split improved from 55% in January to 70% in February, indicating stronger direct channel performance.</li>
+        <li>Lead pipeline grew to 45,110 total leads with 2,664 new leads added across both months at an average cost per lead of $0.74.</li>
+        <li>Website traffic totaled 46,760 visits, supporting lead generation and booking conversions.</li>
+        <li>Cost efficiency remained strong with cost per booking averaging $105.29 across the period.</li>
+      </ul>
+    </section>
+    
+    <!-- Date Filter -->
+    <section class="card filter-bar-card">
+      <div class="filter-bar">
+        <label for="filter-from">From:</label>
+        <input type="month" id="filter-from" value="2026-01">
+        <label for="filter-to">To:</label>
+        <input type="month" id="filter-to" value="2026-02">
+        <button class="filter-btn" onclick="applyFilter()">Apply Filter</button>
+      </div>
+    </section>
+    
+    <!-- Section C: Website Traffic -->
+    <section class="card">
+      <h2 class="section-header">🌐 Website Traffic — Top of Funnel</h2>
+      <p class="funnel-label">How many people are visiting your website?</p>
+      
+      <p class="overview-text">Website traffic totaled 46,760 visits across January and February 2026, with January seeing the highest volume at 25,000 visits. Traffic remained strong in February at 21,760 visits, continuing to drive leads into the funnel.</p>
+      
+      <p class="explainer">Website Traffic shows how many people visited your site each month. This is where awareness turns into active interest.</p>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">21,760</div>
+          <div class="stat-label">Website Traffic (Feb)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">46,760</div>
+          <div class="stat-label">Total Visits</div>
+        </div>
+      </div>
+      
+      <div class="chart-container">
+        <canvas id="websiteChart"></canvas>
+      </div>
+    </section>
+    
+    <!-- Section D: Lead Generation -->
+    <section class="card">
+      <h2 class="section-header">🎯 Lead Generation — Middle of Funnel</h2>
+      <p class="funnel-label">How many people are raising their hand?</p>
+      
+      <p class="overview-text">Lead generation delivered strong results with 2,664 new leads captured across the period. February showed particularly impressive lead growth at 15.5%, expanding the total pipeline to 45,110 leads. Cost per lead improved from $0.77 in January to $0.70 in February, demonstrating increasing efficiency.</p>
+      
+      <p class="explainer">New Leads are people who made a real enquiry this month. Total Leads is your full pipeline. Lead Growth % shows how fast your audience of interested guests is expanding.</p>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">15.5%</div>
+          <div class="stat-label">Lead Growth (Feb)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">$0.70</div>
+          <div class="stat-label">Cost Per Lead (Feb)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">45,110</div>
+          <div class="stat-label">Total Pipeline</div>
+        </div>
+      </div>
+      
+      <div class="charts-row">
+        <div class="chart-container">
+          <canvas id="newLeadsChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="ttlLeadsChart"></canvas>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Section E: Revenue & Bookings -->
+    <section class="card">
+      <h2 class="section-header">💰 Revenue & Bookings — Bottom of Funnel</h2>
+      <p class="funnel-label">How many people actually booked?</p>
+      
+      <p class="overview-text">Revenue performance was exceptional with total revenue reaching $273,588 across the two-month period. February showed remarkable year-over-year growth of 84.7% ($129,988 vs $70,370 LY). Direct booking split improved significantly from 55% in January to 70% in February, up from 75% last year in the same month. January delivered the highest monthly revenue at $143,600, representing a 45.8% increase over the prior year.</p>
+      
+      <p class="explainer">Total Revenue is all booking income for the period. Direct Booking Revenue is earnings without OTA commission — the higher your direct split, the more profit stays with you.</p>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">70%</div>
+          <div class="stat-label">Direct Split (Feb)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">+84.7%</div>
+          <div class="stat-label">Revenue vs LY (Feb)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">$143,600</div>
+          <div class="stat-label">Peak Revenue (Jan)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">$122.53</div>
+          <div class="stat-label">Cost Per Booking (Feb)</div>
+        </div>
+      </div>
+      
+      <div class="charts-row">
+        <div class="chart-container">
+          <canvas id="revenueChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="directSplitChart"></canvas>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Generated on <span id="currentDate"></span></p>
+      <p>Data provided by HiddenGem Media</p>
+    </footer>
+  </div>
+  
+  <button class="pdf-button" onclick="window.print()">⬇ Download PDF</button>
+  
+  <script>
+    // Client Data
+    const clientData = [
+      {
+        timeline: "January 2026",
+        month: "2026-01",
+        lyTotalRevenue: 98497.13,
+        lyDirectRevenue: 80941.73,
+        lyDirectSplit: 0.82,
+        totalRevenue: 143599.7,
+        directRevenue: 78990.95,
+        directSplit: 0.55,
+        websiteTraffic: 25000,
+        adSpend: 2465,
+        costPerLead: 0.77,
+        costPerBooking: 88.05,
+        newLeads: 1410,
+        ttlLeads: 43856,
+        leadGrowth: 0.093,
+        notes: ""
+      },
+      {
+        timeline: "February 2026",
+        month: "2026-02",
+        lyTotalRevenue: 70370,
+        lyDirectRevenue: 52741,
+        lyDirectSplit: 0.75,
+        totalRevenue: 129988,
+        directRevenue: 90424,
+        directSplit: 0.70,
+        websiteTraffic: 21760,
+        adSpend: 2885.42,
+        costPerLead: 0.70,
+        costPerBooking: 122.53,
+        newLeads: 1254,
+        ttlLeads: 45110,
+        leadGrowth: 0.155,
+        notes: ""
+      }
+    ];
+    
+    let filteredData = [...clientData];
+    let chartRegistry = {};
+    
+    // Formatting functions
+    function formatDollar(n) {
+      if (n === null || n === undefined || isNaN(n)) return '$0';
+      return '$' + Math.round(n).toLocaleString('en-US');
+    }
+    
+    function formatPercent(n) {
+      if (n === null || n === undefined || isNaN(n)) return '0%';
+      return (n * 100).toFixed(1) + '%';
+    }
+    
+    function formatNumber(n) {
+      if (n === null || n === undefined || isNaN(n)) return '0';
+      return Math.round(n).toLocaleString('en-US');
+    }
+    
+    function formatLargeNumber(n) {
+      if (n === null || n === undefined || isNaN(n)) return '0';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+      return Math.round(n).toLocaleString('en-US');
+    }
+    
+    // Chart.js defaults
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.08)';
+    
+    // Initialize charts
+    function initCharts() {
+      destroyCharts();
+      
+      const labels = filteredData.map(d => d.timeline);
+      
+      // Website Traffic Chart
+      const websiteCtx = document.getElementById('websiteChart').getContext('2d');
+      chartRegistry.website = new Chart(websiteCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Website Traffic',
+            data: filteredData.map(d => d.websiteTraffic),
+            borderColor: '#d4af37',
+            backgroundColor: 'rgba(212, 175, 55, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#d4af37',
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Monthly Website Traffic',
+              color: '#ffffff',
+              font: { size: 13 }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { 
+                color: '#94a3b8',
+                callback: value => formatLargeNumber(value)
+              },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            }
+          }
+        }
+      });
+      
+      // New Leads Chart
+      const newLeadsCtx = document.getElementById('newLeadsChart').getContext('2d');
+      chartRegistry.newLeads = new Chart(newLeadsCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'New Leads',
+            data: filteredData.map(d => d.newLeads),
+            backgroundColor: '#d4af37',
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'New Leads per Month',
+              color: '#ffffff',
+              font: { size: 13 }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { 
+                color: '#94a3b8',
+                callback: value => formatNumber(value)
+              },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            }
+          }
+        }
+      });
+      
+      // TTL Leads Chart
+      const ttlLeadsCtx = document.getElementById('ttlLeadsChart').getContext('2d');
+      chartRegistry.ttlLeads = new Chart(ttlLeadsCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Total Leads',
+            data: filteredData.map(d => d.ttlLeads),
+            borderColor: '#14b8a6',
+            backgroundColor: 'rgba(20, 184, 166, 0.1)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.3,
+            pointBackgroundColor: '#14b8a6',
+            pointRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Total Lead Pipeline Growth',
+              color: '#ffffff',
+              font: { size: 13 }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              ticks: { 
+                color: '#94a3b8',
+                callback: value => formatLargeNumber(value)
+              },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            }
+          }
+        }
+      });
+      
+      // Revenue Chart
+      const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+      chartRegistry.revenue = new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Total Revenue',
+              data: filteredData.map(d => d.totalRevenue),
+              borderColor: '#d4af37',
+              backgroundColor: 'rgba(212, 175, 55, 0.1)',
+              borderWidth: 3,
+              fill: false,
+              tension: 0.3,
+              pointBackgroundColor: '#d4af37',
+              pointRadius: 6
+            },
+            {
+              label: 'LY Total Revenue',
+              data: filteredData.map(d => d.lyTotalRevenue),
+              borderColor: '#3b82f6',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              fill: false,
+              tension: 0.3,
+              pointBackgroundColor: '#3b82f6',
+              pointRadius: 5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Total Revenue vs Last Year',
+              color: '#ffffff',
+              font: { size: 13 }
+            },
+            legend: {
+              labels: { color: '#ffffff' }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { 
+                color: '#94a3b8',
+                callback: value => formatDollar(value)
+              },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            }
+          }
+        }
+      });
+      
+      // Direct Split Chart
+      const directSplitCtx = document.getElementById('directSplitChart').getContext('2d');
+      chartRegistry.directSplit = new Chart(directSplitCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Direct Split %',
+              data: filteredData.map(d => d.directSplit * 100),
+              backgroundColor: '#d4af37',
+              borderRadius: 6
+            },
+            {
+              label: 'LY Direct Split %',
+              data: filteredData.map(d => d.lyDirectSplit * 100),
+              backgroundColor: '#3b82f6',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Direct Booking Split % vs Last Year',
+              color: '#ffffff',
+              font: { size: 13 }
+            },
+            legend: {
+              labels: { color: '#ffffff' }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { 
+                color: '#94a3b8',
+                callback: value => value + '%'
+              },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            },
+            x: {
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.08)' }
+            }
+          }
+        }
+      });
+    }
+    
+    function destroyCharts() {
+      Object.values(chartRegistry).forEach(chart => {
+        if (chart) chart.destroy();
+      });
+      chartRegistry = {};
+    }
+    
+    function applyFilter() {
+      const fromValue = document.getElementById('filter-from').value;
+      const toValue = document.getElementById('filter-to').value;
+      
+      filteredData = clientData.filter(d => {
+        return d.month >= fromValue && d.month <= toValue;
+      });
+      
+      if (filteredData.length === 0) {
+        alert('No data for selected period');
+        filteredData = [...clientData];
+      }
+      
+      initCharts();
+    }
+    
+    // Set current date
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Initialize
+    initCharts();
+  </script>
+</body>
+</html>
